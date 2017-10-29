@@ -7,5 +7,5 @@ Created on 29-10-2017
 from enum import Enum
 
 class ComponentEnum(Enum):
-    RIGHT_HAND = 'RIGHT_HAND'
+    RIGHT_HAND = 3
     

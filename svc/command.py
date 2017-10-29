@@ -7,7 +7,6 @@ Created on 29-10-2017
 from exception import YaiRoverException
 from enumrobot.commons import CommonsEnum
 from enumrobot.component import ComponentEnum
-from enumrobot.i2c import I2CEnum
 from model.vo import YaiCommand, YaiResult
 from lib.logger import logger as log
 import threading
@@ -77,18 +76,20 @@ class YaiCommandSvc():
             if command is None:
                 raise YaiRoverException("yaiCommand.COMMAND no puede ser nulo")                                    
 
+            componentEnum = ComponentEnum[component]
+            log.info(componentEnum)
             #Comandos que se propagan con delay
-            if ((component == ComponentEnum.RIGHT_HAND.value)):
-                resultStr = CommonsEnum.STATUS_OK.value
-                propagate = True
-                if (not yaiCommand.P5 is None) and (yaiCommand.P5.isnumeric()):
-                    tiempoStop = int(yaiCommand.P5)
-                    time.sleep(tiempoStop)
+            #if ((component == ComponentEnum.RIGHT_HAND.name)):
+            resultStr = CommonsEnum.STATUS_OK.value
+            propagate = True
+            if (not yaiCommand.P5 is None) and (yaiCommand.P5.isnumeric()):
+                tiempoStop = int(yaiCommand.P5)
+                time.sleep(tiempoStop)
 
-                yaiCommand.address = I2CEnum.I2C_CLIENT_RIGHT_HAND.value                
-                log.debug("antes de propagar YaiMotor")
-                yaiResult = self.propagateCommand(yaiCommand)
-                log.debug("despues de propagar YaiMotor")                                                          
+            yaiCommand.address = componentEnum.value                
+            log.debug("antes de propagar YaiMotor")
+            yaiResult = self.propagateCommand(yaiCommand)
+            log.debug("despues de propagar YaiMotor")                                                          
                 
         if propagate :
             content = "{\"propagate\": \"%s\"}" % yaiCommand.type
