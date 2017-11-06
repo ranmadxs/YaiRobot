@@ -11,10 +11,15 @@ import math
 
 class HandReconigtionSvc():
     
-    totalContours = 0
-    maxContour = []
-    font = cv2.FONT_HERSHEY_SIMPLEX    
-    image = None
+    def __init__(self):    
+        self.maxpend = 0.2       
+        self.totalContours = 0
+        self.maxContour = []
+        self.minPoints = []
+        self.font = cv2.FONT_HERSHEY_SIMPLEX    
+        self.image = None
+        self.centerPoint = YaiPoint()
+        self.baseHand = YaiPoint()
     
     def setImage(self, imageIn):
         self.image = imageIn
@@ -45,23 +50,51 @@ class HandReconigtionSvc():
                 minY = contour[1]
 
         for contour in contours:
-            if minY > contour[1] and math.fabs(contour[0] - minX) < descEst.x/8:
+            if minY > contour[1] and math.fabs(contour[0] - minX) < descEst.x/16:
                 minX = contour[0]
                 minY = contour[1]
 
         point.x = minX
         point.y = minY
         point.point = (minX, minY)        
-        print "pmin%s"%point        
-        subConjuntoAux = []
-        cv2.putText(self.image,'o',tuple(point.point),self.font,1,(255,0,0),2)
+        #print "pmin%s"%point        
+        return point
+    
+    def finMinPendientPoint(self, contours, descEst):
+        mpoint = self.findMinPoint(contours, descEst)
         
+        dy = (mpoint.y - self.baseHand.y)
+        dx = (mpoint.x - self.baseHand.x)
+        mpen = float(dy) / float(dx)
+
+        cv2.putText(self.image,'.',tuple(mpoint.point),self.font,.5,(0,255,0),1)
+        
+        subConjuntoAux = []
+              
         for contour in contours:
-            if contour[0] > minX + (descEst.x /8):
+            cpen = float(contour[1] - self.baseHand.y) / float(contour[0] - self.baseHand.x)
+            if not(cpen <= mpen + self.maxpend and cpen >= mpen - self.maxpend):
+                subConjuntoAux.append(contour)
+                print "%s -> %s" % (contour, cpen)
+
+        if len(subConjuntoAux) > 0:
+            self.finMinPendientPoint(subConjuntoAux, descEst)
+        
+    def findMinPoints(self, contours, descEst):
+        point = self.findMinPoint(contours, descEst)
+        cv2.putText(self.image,'%d, %d'%(point.x, point.y),tuple(point.point),self.font,.5,(255,0,0),1)
+      
+        #print "pmin%s"%point        
+        subConjuntoAux = []
+        #cv2.putText(self.image,'%do%d'%(minX, minY),tuple(point.point),self.font,.5,(255,0,0),1)
+        self.minPoints.append(point.getPoint())
+                
+        for contour in contours:
+            if contour[0] > point.x + (descEst.x /16):
                 subConjuntoAux.append(contour)
 
         if len(subConjuntoAux) > 0:
-            self.findMinPoint(subConjuntoAux, descEst)        
+            self.findMinPoints(subConjuntoAux, descEst)        
     
     def calcDesvEst(self, contours):
         
@@ -87,6 +120,7 @@ class HandReconigtionSvc():
     
     def getCenter(self, contours):
         self.totalContours = len(contours)
+        height, width, channels = self.image.shape
         log.info(self.totalContours)
         if len(contours) > 0 :
             sx = 0
@@ -109,7 +143,7 @@ class HandReconigtionSvc():
                     if (yc >maxYC) :
                         maxYC = yc
                         maxXC = xc
-                    point = (xc, yc)
+                    #point = (xc, yc)
                     #log.debug(point)
                     #cv2.putText(self.image,'.',point,self.font,1,(255,255,255),1)
                     spx = spx + xc
@@ -131,32 +165,43 @@ class HandReconigtionSvc():
 
             log.info("Total Contour: %d" %self.totalContours)
             centerMass=((mx + amx)/2, (my + amy)/2)
-            centerPoint = YaiPoint()
-            centerPoint.x = centerMass[0]
-            centerPoint.y = centerMass[1]
-            centerPoint.point = centerMass          
-            
-            subConjuntoDedos = []
-            for contour in self.maxContour:
-                if (contour[1] < centerPoint.y ) :
-                    #and contour[0] < centerPoint.x
-                    subConjuntoDedos.append(contour) 
-                        
+            self.centerPoint.x = centerMass[0]
+            self.centerPoint.y = centerMass[1]     
+                                               
             subConjuntoDedos = self.maxContour
-            desvEst = self.calcDesvEst(subConjuntoDedos)
+            desvEst = self.calcDesvEst(self.maxContour)
+            
+            self.baseHand.x = self.centerPoint.x
+            self.baseHand.y = height - 2*int(desvEst.y)             
+
+            
+            print "centerPoint: %s"%self.centerPoint
             
             print " ===== DESV EST ====== "
             print desvEst
             print " ===== ======= ====== "
             
-            self.findMinPoint(subConjuntoDedos, desvEst)
+            self.findMinPoints(subConjuntoDedos, desvEst)
             
-            for contour in subConjuntoDedos:
-                #and contour[0] > centerPoint.x
-                #or (contour[0] > centerPoint.x):
-                cv2.putText(self.image,'%d.%d'%(contour[0], contour[1]),(contour[0], contour[1]),self.font,0.3,(0,0,0),1)
-            #    cv2.putText(self.image,'.',(contour[0], contour[1]),self.font,0.8,(0,255,0),1)
-                #print (contour[0], contour[1])
+            subConjuntoMax = []
+            for contour in self.minPoints:
+                if (contour[1] < self.centerPoint.y) :
+                    subConjuntoMax.append(contour)
+            
+            if len(self.minPoints) > 0:
+                self.finMinPendientPoint(subConjuntoMax, desvEst)
+            
+            #pointMin = self.findMinPoint(subConjuntoDedos, desvEst)
+            #print pointMin
+            #cv2.putText(self.image,'(%d,%d)'%(pointMin.x, pointMin.y),tuple(pointMin.getPoint()),self.font,.5,(255,0,0),1)
+            
+            #for contour in subConjuntoDedos:
+            #    cv2.putText(self.image,'%d.%d'%(contour[0], contour[1]),(contour[0], contour[1]),self.font,0.3,(0,0,0),1)
 
-            cv2.putText(self.image,'%d*%d'%(centerPoint.x, centerPoint.y),tuple(centerPoint.point),self.font,1,(0,0,255),1)
-            return centerPoint
+            cv2.putText(self.image,'%d*%d'%(self.centerPoint.x, self.centerPoint.y),tuple(self.centerPoint.getPoint()),self.font,1,(0,0,255),1)
+                       
+            
+            cv2.line(self.image, self.baseHand.getPoint(), self.centerPoint.getPoint(), (0, 0, 255), 1, 8)
+            
+            cv2.putText(self.image,'C',tuple(self.baseHand.getPoint()) ,self.font,1,(255,0,0),2)
+            return self.centerPoint

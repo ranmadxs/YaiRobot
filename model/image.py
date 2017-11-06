@@ -8,7 +8,10 @@ from model import AbstractUtilDTO
 class YaiPoint(AbstractUtilDTO):
     x = None
     y = None
-    point = ()
+    
+    def getPoint(self):
+        return (self.x, self.y)
+    
     
 class YaiFinger(AbstractUtilDTO):
     name = None

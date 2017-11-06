@@ -11,7 +11,7 @@ from model.image import YaiPoint
 
 handReconigtionSvc = HandReconigtionSvc()
 
-imageName = "resources/imgs/hand0F.jpg"
+imageName = "resources/imgs/hand3F.jpg"
 image = cv2.imread(imageName)
 font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -32,7 +32,6 @@ __, contours, hierarchy = cv2.findContours(tre_green, cv2.RETR_TREE, cv2.CHAIN_A
 handReconigtionSvc.setImage(image)
 yaiCenterP = handReconigtionSvc.getCenter(contours)
 
-print yaiCenterP
 
 cv2.imshow(imageName,image)
 cv2.waitKey(0)
