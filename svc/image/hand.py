@@ -9,10 +9,12 @@ from lib.logger import logger as log
 from model.image import YaiPoint
 import math
 
+
+#TODO: Eliminar puntos que se encuentren dentro de la misma circunferencia.
 class HandReconigtionSvc():
     
     def __init__(self):    
-        self.maxpend = 0.2       
+        self.maxpend = 0.5       
         self.totalContours = 0
         self.maxContour = []
         self.minPoints = []
@@ -67,15 +69,27 @@ class HandReconigtionSvc():
         dx = (mpoint.x - self.baseHand.x)
         mpen = float(dy) / float(dx)
 
-        cv2.putText(self.image,'.',tuple(mpoint.point),self.font,.5,(0,255,0),1)
         
         subConjuntoAux = []
+        
               
         for contour in contours:
-            cpen = float(contour[1] - self.baseHand.y) / float(contour[0] - self.baseHand.x)
-            if not(cpen <= mpen + self.maxpend and cpen >= mpen - self.maxpend):
-                subConjuntoAux.append(contour)
-                print "%s -> %s" % (contour, cpen)
+            if float(contour[0] - self.baseHand.x) != 0:
+                cpen = float(contour[1] - self.baseHand.y) / float(contour[0] - self.baseHand.x)
+                if not(cpen <= mpen + self.maxpend and cpen >= mpen - self.maxpend) and (contour[0] > mpoint.x + descEst.x/2):
+                    subConjuntoAux.append(contour)
+                    print "%s -> %s" % (contour, cpen)
+                else:
+                    if contour[1] < mpoint.y :                    
+                        mpoint.x = contour[0]
+                        mpoint.y = contour[1]
+                        print ">>> Arreglando mpoint %s, %s" %(mpoint.x, mpoint.y)
+                     
+        cv2.putText(self.image,'.',tuple(mpoint.getPoint()),self.font,1.5,(0,255,0),2)
+        cv2.circle(self.image,mpoint.getPoint(), int(descEst.x/4), (0,255,0), 1)
+
+        print "=============== %s" %mpoint
+
 
         if len(subConjuntoAux) > 0:
             self.finMinPendientPoint(subConjuntoAux, descEst)
@@ -189,7 +203,7 @@ class HandReconigtionSvc():
                     subConjuntoMax.append(contour)
             
             if len(self.minPoints) > 0:
-                self.finMinPendientPoint(subConjuntoMax, desvEst)
+                self.finMinPendientPoint(self.minPoints, desvEst)
             
             #pointMin = self.findMinPoint(subConjuntoDedos, desvEst)
             #print pointMin
@@ -202,6 +216,8 @@ class HandReconigtionSvc():
                        
             
             cv2.line(self.image, self.baseHand.getPoint(), self.centerPoint.getPoint(), (0, 0, 255), 1, 8)
+            
+            cv2.circle(self.image,self.centerPoint.getPoint(), int(math.fabs(self.centerPoint.y - self.baseHand.y)), (0,0,255), 1)
             
             cv2.putText(self.image,'C',tuple(self.baseHand.getPoint()) ,self.font,1,(255,0,0),2)
             return self.centerPoint
