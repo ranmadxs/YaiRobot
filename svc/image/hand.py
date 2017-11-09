@@ -8,9 +8,9 @@ import numpy as np
 from lib.logger import logger as log
 from model.image import YaiPoint
 import math
+from dis import distb
 
-
-#TODO: Eliminar puntos que se encuentren dentro de la misma circunferencia.
+#TODO: Eliminar puntos que se encuentran muy alejados del centro de masa (2desvest)
 class HandReconigtionSvc():
     
     def __init__(self):    
@@ -63,36 +63,52 @@ class HandReconigtionSvc():
         return point
     
     def finMinPendientPoint(self, contours, descEst):
-        mpoint = self.findMinPoint(contours, descEst)
-        
+        mpoint = self.findMinPoint(contours, descEst)        
         dy = (mpoint.y - self.baseHand.y)
         dx = (mpoint.x - self.baseHand.x)
         mpen = float(dy) / float(dx)
-
         
         subConjuntoAux = []
         
+        log.info ("mpen %s %s/%s=%s" %(mpoint.getPoint(), mpen, dy, dx))
               
-        for contour in contours:
-            if float(contour[0] - self.baseHand.x) != 0:
+        for contour in contours:            
+            if float(contour[0] - self.baseHand.x) != 0:                
                 cpen = float(contour[1] - self.baseHand.y) / float(contour[0] - self.baseHand.x)
+                log.debug("rr> %s  %s"%(contour, cpen))
+                #ESTE IF DEBO PENSARLO SUPER BIEN AHORA ESTA PESIMO Y FUNCIONA DE CASUALIDAD
                 if not(cpen <= mpen + self.maxpend and cpen >= mpen - self.maxpend) and (contour[0] > mpoint.x + descEst.x/2):
+                    
                     subConjuntoAux.append(contour)
-                    print "%s -> %s" % (contour, cpen)
-                else:
+                    log.info( "%s -> %s" % (contour, cpen))
+                else:                    
                     if contour[1] < mpoint.y :                    
                         mpoint.x = contour[0]
                         mpoint.y = contour[1]
-                        print ">>> Arreglando mpoint %s, %s" %(mpoint.x, mpoint.y)
+                        log.info( ">>> Arreglando mpoint %s, %s   %s" %(mpoint.x, mpoint.y, cpen))
+                    else:
+                        log.info( "Se descarta %s   %s <por> %s, %s    %s" %(contour, cpen, mpoint.x, mpoint.y, mpen))
+            else :
+                log.info ("WTFFFF %s"%contour)
                      
         cv2.putText(self.image,'.',tuple(mpoint.getPoint()),self.font,1.5,(0,255,0),2)
         cv2.circle(self.image,mpoint.getPoint(), int(descEst.x/4), (0,255,0), 1)
 
-        print "=============== %s" %mpoint
+        log.info ("=============== %s %s" %(mpoint.getPoint(), mpen))
 
-
+        countEl = 0
         if len(subConjuntoAux) > 0:
-            self.finMinPendientPoint(subConjuntoAux, descEst)
+            for contour in subConjuntoAux:
+                distBtw = self.calcDistPoints(mpoint.getPoint(), (contour[0], contour[1]))
+                if (distBtw <= int(descEst.x/4)):
+                    print "Removiendo punto %s (%s <= %s)"%(contour, distBtw, int(descEst.x/4))
+                    subConjuntoAux.remove(contour)
+            if len(subConjuntoAux) > 0:                    
+                self.finMinPendientPoint(subConjuntoAux, descEst)
+    
+    def calcDistPoints(self, p1, p2):
+        dist = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+        return dist
         
     def findMinPoints(self, contours, descEst):
         point = self.findMinPoint(contours, descEst)
@@ -110,12 +126,10 @@ class HandReconigtionSvc():
         if len(subConjuntoAux) > 0:
             self.findMinPoints(subConjuntoAux, descEst)        
     
-    def calcDesvEst(self, contours):
-        
+    def calcDesvEst(self, contours):        
         mPoint = self.calcPromedio(contours)
         desvEstx = 0
-        desvEsty = 0        
-        
+        desvEsty = 0                
         for contour in contours:
             desvEstx = desvEstx + math.pow(contour[0] - mPoint.x, 2)
             desvEsty = desvEsty + math.pow(contour[1] - mPoint.y, 2)
@@ -173,7 +187,7 @@ class HandReconigtionSvc():
             
             mx = sx / self.totalContours
             my = sy / self.totalContours
-
+            
             amx = ax / totalAll
             amy = ay / totalAll
 
@@ -182,42 +196,55 @@ class HandReconigtionSvc():
             self.centerPoint.x = centerMass[0]
             self.centerPoint.y = centerMass[1]     
                                                
-            subConjuntoDedos = self.maxContour
+            #subConjuntoDedos = self.maxContour
             desvEst = self.calcDesvEst(self.maxContour)
             
             self.baseHand.x = self.centerPoint.x
             self.baseHand.y = height - 2*int(desvEst.y)             
 
+            log.info("Base Hand (%s, %s)"%(self.baseHand.x, self.baseHand.y))
+
+            mainRadio = int(math.fabs(self.centerPoint.y - self.baseHand.y))
             
-            print "centerPoint: %s"%self.centerPoint
+            log.info( "centerPoint: %s"%self.centerPoint)
             
-            print " ===== DESV EST ====== "
-            print desvEst
-            print " ===== ======= ====== "
+            log.info(" ===== DESV EST ====== ")
+            log.info( desvEst)
+            log.info(" ===== ======= ====== ")
+            
+            subConjuntoDedos = [] 
+            for contour in self.maxContour:
+                if (self.centerPoint.y + desvEst.y > contour[1] ):
+                    #cv2.putText(self.image,'%d.%d'%(contour[0], contour[1]),(contour[0], contour[1]),self.font,0.3,(0,0,0),1)       
+                    subConjuntoDedos.append(contour)
             
             self.findMinPoints(subConjuntoDedos, desvEst)
             
             subConjuntoMax = []
-            for contour in self.minPoints:
-                if (contour[1] < self.centerPoint.y) :
+            log.info("=== MIN POINTS ===")
+            for contour in self.minPoints:                
+                disp = self.calcDistPoints(self.centerPoint.getPoint(), (contour[0], contour[1]))
+                if (disp > mainRadio) :
+                    log.debug(contour)
+                #if (self.centerPoint.y > contour[1] ) and (disp > mainRadio):
                     subConjuntoMax.append(contour)
             
             if len(self.minPoints) > 0:
-                self.finMinPendientPoint(self.minPoints, desvEst)
+                self.finMinPendientPoint(subConjuntoMax, desvEst)
             
             #pointMin = self.findMinPoint(subConjuntoDedos, desvEst)
             #print pointMin
             #cv2.putText(self.image,'(%d,%d)'%(pointMin.x, pointMin.y),tuple(pointMin.getPoint()),self.font,.5,(255,0,0),1)
             
-            #for contour in subConjuntoDedos:
-            #    cv2.putText(self.image,'%d.%d'%(contour[0], contour[1]),(contour[0], contour[1]),self.font,0.3,(0,0,0),1)
+            for contour in subConjuntoDedos:
+                cv2.putText(self.image,'%d.%d'%(contour[0], contour[1]),(contour[0], contour[1]),self.font,0.3,(0,0,0),1)
 
             cv2.putText(self.image,'%d*%d'%(self.centerPoint.x, self.centerPoint.y),tuple(self.centerPoint.getPoint()),self.font,1,(0,0,255),1)
                        
             
             cv2.line(self.image, self.baseHand.getPoint(), self.centerPoint.getPoint(), (0, 0, 255), 1, 8)
             
-            cv2.circle(self.image,self.centerPoint.getPoint(), int(math.fabs(self.centerPoint.y - self.baseHand.y)), (0,0,255), 1)
+            cv2.circle(self.image,self.centerPoint.getPoint(), mainRadio, (0,0,255), 1)
             
             cv2.putText(self.image,'C',tuple(self.baseHand.getPoint()) ,self.font,1,(255,0,0),2)
             return self.centerPoint
