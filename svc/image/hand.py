@@ -76,7 +76,8 @@ class HandReconigtionSvc():
             if float(contour[0] - self.baseHand.x) != 0:                
                 cpen = float(contour[1] - self.baseHand.y) / float(contour[0] - self.baseHand.x)
                 log.debug("rr> %s  %s"%(contour, cpen))
-                #ESTE IF DEBO PENSARLO SUPER BIEN AHORA ESTA PESIMO Y FUNCIONA DE CASUALIDAD
+                #ESTE IF DEBO PENSARLO SUPER BIEN AHORA ESTA PESIMO Y FUNCIONA DE CASUALIDAD, ALGORITMO CORRECTO DEBE SER: TIRAR REXCTAS PARALELAS Y VER PUNTOS ENTRE ELLAS
+                # Y DEBO PONER SOLO LOS PUNTOS DE DEDOS HACIA ARRIBA Y LUEGO VEO EL DEDO GORDO
                 if not(cpen <= mpen + self.maxpend and cpen >= mpen - self.maxpend) and (contour[0] > mpoint.x + descEst.x/2):
                     
                     subConjuntoAux.append(contour)
