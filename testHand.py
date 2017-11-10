@@ -11,8 +11,8 @@ from model.image import YaiPoint
 
 handReconigtionSvc = HandReconigtionSvc()
 
-imageName = "resources/imgs/hand3F.jpg"
-imageName = "resources/imgs/wb01.jpg"
+imageName = "resources/imgs/hand2F.jpg"
+#imageName = "resources/imgs/wb01.jpg"
 image = cv2.imread(imageName)
 font = cv2.FONT_HERSHEY_SIMPLEX
 
