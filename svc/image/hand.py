@@ -113,32 +113,33 @@ class HandReconigtionSvc():
         bpy = self.centerPoint.y
         dy = (bpy - point.y)
         dx = (bpx - point.x)
-        m = float(dy) / float(dx)
-        rect = YaiRect()
-        rect.m = m
-        rect.b = float(bpy) - float(m*bpx)
-        cv2.line(self.image, point.getPoint(), (int(bpx), int(bpy)), (0, 0, 255), 1, 8)
-        arrayRect.append(rect)
-        
-        
-        dx = descEst.x/4
-        
-        rect2 = YaiRect()
-        r2x = point.x + dx
-        r2y = point.y
-        rect2.m = m
-        rect2.b = float(r2y) - float(m*r2x)                            
-        cv2.line(self.image, (int(r2x), int(r2y)), (int(bpx + dx), int(bpy)), (0, 0, 255), 1, 8)
-        arrayRect.append(rect2)
-        
-        rect3 = YaiRect()        
-        r3x = point.x - dx
-        r3y = point.y
-        rect3.m = m
-        rect3.b = float(r3y) - float(m*r3x)
-        arrayRect.append(rect3)
-
-        cv2.line(self.image, (int(r3x), int(r3y)), (int(bpx - dx), int(bpy)), (0, 0, 255), 1, 8)                
+        if dx != 0:
+            m = float(dy) / float(dx)
+            rect = YaiRect()
+            rect.m = m
+            rect.b = float(bpy) - float(m*bpx)
+            cv2.line(self.image, point.getPoint(), (int(bpx), int(bpy)), (0, 0, 255), 1, 8)
+            arrayRect.append(rect)
+            
+            
+            dx = descEst.x/4
+            
+            rect2 = YaiRect()
+            r2x = point.x + dx
+            r2y = point.y
+            rect2.m = m
+            rect2.b = float(r2y) - float(m*r2x)                            
+            cv2.line(self.image, (int(r2x), int(r2y)), (int(bpx + dx), int(bpy)), (0, 0, 255), 1, 8)
+            arrayRect.append(rect2)
+            
+            rect3 = YaiRect()        
+            r3x = point.x - dx
+            r3y = point.y
+            rect3.m = m
+            rect3.b = float(r3y) - float(m*r3x)
+            arrayRect.append(rect3)
+    
+            cv2.line(self.image, (int(r3x), int(r3y)), (int(bpx - dx), int(bpy)), (0, 0, 255), 1, 8)                
         
         return arrayRect
     
@@ -156,45 +157,46 @@ class HandReconigtionSvc():
         mpoint = self.findMinPoint(contours, descEst)        
         dy = (mpoint.y - self.baseHand.y)
         dx = (mpoint.x - self.baseHand.x)
-        mpen = float(dy) / float(dx)
-        
-        subConjuntoAux = []
-        
-        log.info ("mpen %s %s/%s=%s" %(mpoint.getPoint(), dy, dx, mpen))
-        arrayRect = self.calcRect(mpoint, descEst)
-              
-        arrayPendientes = []
-        arrayDedo = []
-        for contour in contours:   
+        if dx != 0:
+            mpen = float(dy) / float(dx)
             
-            if contour[0] != mpoint.x and contour[1] != mpoint.y:                        
-                point = YaiPoint()
-                point.x = contour[0]
-                point.y = contour[1]   
-                distMin = self.distPoint2Rect(point, arrayRect, descEst)
-                #log.debug(distMin) 
-                if (distMin <= descEst.x / 2):
-                    #cv2.putText(self.image,'O',tuple(point.getPoint()),self.font,1.5,(255,0,255),2)
-                    log.debug("(--) %s %s"%(point.getPoint(), ""))                    
-                    arrayDedo.append(contour)
-                else:
-                    log.debug("(++) %s %s"%(point.getPoint(), ""))
-                    arrayPendientes.append(contour)
-
-        if len(arrayDedo) > 1:
-            for contour in arrayDedo:
-                if contour[1] < mpoint.y :
-                    log.info( ">>> Arreglando %s por %s " %(mpoint.getPoint(), contour))                    
-                    mpoint.x = contour[0]
-                    mpoint.y = contour[1]                    
-                     
-        cv2.putText(self.image,'.',tuple(mpoint.getPoint()),self.font,1.5,(0,255,0),2)
-        cv2.circle(self.image,mpoint.getPoint(), int(descEst.x/2), (0,255,0), 1)
-
-        log.info ("=============== %s %s" %(mpoint.getPoint(), mpen))
-        
-        if len(arrayPendientes) >= 1:
-            self.finMinPendientPoint(arrayPendientes, descEst)
+            subConjuntoAux = []
+            
+            log.info ("mpen %s %s/%s=%s" %(mpoint.getPoint(), dy, dx, mpen))
+            arrayRect = self.calcRect(mpoint, descEst)
+                  
+            arrayPendientes = []
+            arrayDedo = []
+            for contour in contours:   
+                
+                if contour[0] != mpoint.x and contour[1] != mpoint.y:                        
+                    point = YaiPoint()
+                    point.x = contour[0]
+                    point.y = contour[1]   
+                    distMin = self.distPoint2Rect(point, arrayRect, descEst)
+                    #log.debug(distMin) 
+                    if (distMin <= descEst.x / 2):
+                        #cv2.putText(self.image,'O',tuple(point.getPoint()),self.font,1.5,(255,0,255),2)
+                        log.debug("(--) %s %s"%(point.getPoint(), ""))                    
+                        arrayDedo.append(contour)
+                    else:
+                        log.debug("(++) %s %s"%(point.getPoint(), ""))
+                        arrayPendientes.append(contour)
+    
+            if len(arrayDedo) > 1:
+                for contour in arrayDedo:
+                    if contour[1] < mpoint.y :
+                        log.info( ">>> Arreglando %s por %s " %(mpoint.getPoint(), contour))                    
+                        mpoint.x = contour[0]
+                        mpoint.y = contour[1]                    
+                         
+            cv2.putText(self.image,'.',tuple(mpoint.getPoint()),self.font,1.5,(0,255,0),2)
+            cv2.circle(self.image,mpoint.getPoint(), int(descEst.x/2), (0,255,0), 1)
+    
+            log.info ("=============== %s %s" %(mpoint.getPoint(), mpen))
+            
+            if len(arrayPendientes) >= 1:
+                self.finMinPendientPoint(arrayPendientes, descEst)
         
     
     def calcDistPoints(self, p1, p2):
