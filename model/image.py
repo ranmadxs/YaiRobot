@@ -15,7 +15,7 @@ class YaiRect(AbstractUtilDTO):
 
 class YaiPoint(AbstractUtilDTO):
     x = None
-    y = None
+    y = None    
     
     def __init__(self):
         self.x = None
@@ -27,8 +27,12 @@ class YaiPoint(AbstractUtilDTO):
     
 class YaiFinger(AbstractUtilDTO):
     name = None
-    points = []
+    rects = []
+    point = None
+    pendiente = None
     
     def __init__(self):
         self.name = None
-        self.points = []
+        self.rects = []
+        self.point = None
+        self.pendiente = None
