@@ -44,7 +44,8 @@ while(1):
     #if (handReconigtionSvc.totalContours > 20):
         ##### Show final image ########
     cv2.imshow('Result',frame)
-
+    cv2.imshow('tre_green', tre_green)
+    #cv2.imwrite("tre_green.jpg",tre_green)
     del handReconigtionSvc
     #close the output video by pressing 'ESC'
     k = cv2.waitKey(5) & 0xFF

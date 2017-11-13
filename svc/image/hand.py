@@ -220,21 +220,24 @@ class HandReconigtionSvc():
                 for fingerAux in self.fingers:                
                     distMin = self.distPoint2Rect(finger.point, fingerAux.rects, descEst)
                 #log.debug(distMin) 
-                    if (distMin <= 4*descEst.x / 10) and finger.point.y > fingerAux.point.y:                        
+                    if (distMin <= 3*descEst.x / 10) and finger.point.y > fingerAux.point.y:                        
                         seDescarta = True
                 if not seDescarta:
                     log.info("Se mantiene el finger : %s %s"%(finger.point.getPoint(), ""))
                     fingersAdd.append(finger)
                 else:
                     log.warn("Se descarta el finger : %s %s"%(finger.point.getPoint(), ""))
+                    #fingersAdd.append(finger)
                                         
             self.fingers = fingersAdd
             for finger in fingersAdd:
                 cv2.putText(self.image,'.',tuple(finger.point.getPoint()),self.font,1.5,(0,255,0),2)
                 cv2.circle(self.image,finger.point.getPoint(), int(descEst.x/4), (0,255,0), 1)
+
     
     def getCenter(self, contours):
         self.totalContours = len(contours)
+        log.info("Total Contour: %d" %self.totalContours)
         height, width, channels = self.image.shape
         if len(contours) > 0 :
             sx = 0
@@ -242,42 +245,56 @@ class HandReconigtionSvc():
             totalAll = 0
             ax = 0
             ay = 0
-
+            i = 0
+            max_area=1
+            ci=0
             for contour in contours:
                 #log.debug("===== %d ========="%self.totalContours)
                 spx = 0
                 spy = 0
                 totalPContour = 0
                 maxXC = 0
-                maxYC = 0                
+                maxYC = 0      
+                area = cv2.contourArea(contour)    
+                if(area>max_area):                    
+                    ci=i                        
                 for cpoint in contour:
                     totalPContour = totalPContour + 1
                     xc = cpoint[0][0]
                     yc = cpoint[0][1]
-                    if (yc >maxYC) :
-                        maxYC = yc
-                        maxXC = xc
-                    #point = (xc, yc)
+                    point = (xc, yc)
                     #log.debug(point)
                     #cv2.putText(self.image,'.',point,self.font,1,(255,255,255),1)
                     spx = spx + xc
                     spy = spy + yc
-
-                self.maxContour.append((maxXC, maxYC))
-                #cv2.putText(self.image,'.',(maxXC, maxYC),self.font,1,(255,255,255),1)                    
+                    if(area>max_area):
+                    #    max_area=area
+                        self.maxContour.append(point)
+                        cv2.putText(self.image,'.',(point),self.font,1,(255,255,255),1)                    
                 sx = sx + (spx / totalPContour)
                 sy = sy + (spy / totalPContour)
                 ax = ax + spx
                 ay = ay + spy
                 totalAll = totalPContour + totalAll
-            
+                i = i +1
             mx = sx / self.totalContours
             my = sy / self.totalContours
             
+            #Largest area contour               
+            cnts = contours[ci]
+
+            #Find convex hull
+            hull = cv2.convexHull(cnts)
+            
+            #Find convex defects
+            hull2 = cv2.convexHull(cnts,returnPoints = False)
+            defects = cv2.convexityDefects(cnts,hull2)
+            
+            cv2.drawContours(self.image,[hull],-1,(255,0,255),2)
+            
             amx = ax / totalAll
             amy = ay / totalAll
-
-            log.info("Total Contour: %d" %self.totalContours)
+            
             centerMass=((mx + amx)/2, (my + amy)/2)
             self.centerPoint.x = centerMass[0]
             self.centerPoint.y = centerMass[1]     
@@ -328,8 +345,8 @@ class HandReconigtionSvc():
                 
                 self.removeFingers(desvEst)                        
                 
-                for contour in subConjuntoDedos:
-                    cv2.putText(self.image,'%d.%d'%(contour[0], contour[1]),(contour[0], contour[1]),self.font,0.3,(0,0,0),1)
+                #for contour in subConjuntoDedos:
+                #    cv2.putText(self.image,'%d.%d'%(contour[0], contour[1]),(contour[0], contour[1]),self.font,0.3,(0,0,0),1)
     
                 cv2.putText(self.image,'%d*%d'%(self.centerPoint.x, self.centerPoint.y),tuple(self.centerPoint.getPoint()),self.font,1,(0,0,255),1)
                            

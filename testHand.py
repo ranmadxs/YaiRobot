@@ -11,15 +11,19 @@ from model.image import YaiPoint
 
 handReconigtionSvc = HandReconigtionSvc()
 
-imageName = "resources/imgs/hand5F.jpg"
+imageName = "resources/imgs/hand4F.jpg"
 #imageName = "resources/imgs/wb01.jpg"
 image = cv2.imread(imageName)
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 skin_min = np.array([0, 40, 150], np.uint8)
 skin_max = np.array([20, 150, 255], np.uint8)
+
+skin_min = np.array([2,50,50], np.uint8)
+skin_max = np.array([15,255,255], np.uint8)
+
 #131, 92, 95
-skin_min = np.array([0, 60, 140], np.uint8)
+#skin_min = np.array([0, 60, 140], np.uint8)
 
 
 
@@ -35,5 +39,6 @@ yaiCenterP = handReconigtionSvc.getCenter(contours)
 
 
 cv2.imshow(imageName,image)
+cv2.imwrite("tre_greenv2.jpg",tre_green)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
