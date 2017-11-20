@@ -29,7 +29,8 @@ c = np.concatenate((a, b), axis=0)
 #cnt = np.concatenate(cnt, contours[1])
 print len(contours)
 count = 0
-
+cv2.drawContours(image, contours, -1, (0, 255, 0), 3)
+'''
 for contour in contours:
     for cpoint in contour:
         x = cpoint[0][0]
@@ -40,7 +41,7 @@ hull = cv2.convexHull(cnt)
 
 M = cv2.moments(cnt[0])
 print M
-
+'''
 cv2.imshow(imageName,image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
