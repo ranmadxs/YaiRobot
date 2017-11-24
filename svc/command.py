@@ -11,7 +11,7 @@ from model.vo import YaiCommand, YaiResult
 from lib.logger import logger as log
 import threading
 from svc.communicator.i2c import I2CSvc
-from svc.communicator.serial import YaiSerialSvc
+from svc.communicator.serialcom import YaiSerialSvc
 import time
 
 class YaiCommandSvc():
