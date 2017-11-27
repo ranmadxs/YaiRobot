@@ -33,7 +33,7 @@ class YaiCommand(AbstractUtilDTO):
     COMPONENT = CommonsEnum.YAI_COMMAND_TYPE_NONE.value
     address = 0x00
     json = ""
-    serialPort = SerialEnum.SERIAL_TTYS1_PORT.value
+    #serialPort = SerialEnum.SERIAL_TTYS1_PORT.value
 
     def __resToObject__(self, msgList = None):
         msg = msgList[0]

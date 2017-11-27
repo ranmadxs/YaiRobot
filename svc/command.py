@@ -109,7 +109,7 @@ class YaiCommandSvc():
             yaiResult.status = CommonsEnum.STATUS_OK.value
             yaiResult.message = yaiCommand.message
             yaiResult.type = CommonsEnum.YAI_COMMAND_TYPE_RESULT.value
-            responseCommand = self.yaiSerialSvc.sendCommand(yaiCommand.message, yaiCommand.serialPort)
+            responseCommand = self.yaiSerialSvc.sendCommand(yaiCommand.message, yaiCommand.address)
             yaiResult.__resToObject__(responseCommand)
         
         if (yaiCommand.type == CommonsEnum.YAI_COMMAND_TYPE_I2C.value):
