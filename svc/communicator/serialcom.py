@@ -11,16 +11,21 @@ import time
 
 class YaiSerialSvc():
     
+        
     SERIAL_BAUD_RATE = 9600
+    def __init__(self):
+        self.arduino = serial.Serial("COM4", self.SERIAL_BAUD_RATE)
+        self.arduino.write("init")
+
 
     def sendCommand(self, strSend, port = SerialEnum.SERIAL_TTYS1_PORT.value, baud = SERIAL_BAUD_RATE):
         log.debug(">> %s" % strSend)
-        arduino = serial.Serial(port, baud)
+        #arduino = serial.Serial(port, baud)
         sendCmd = strSend.encode('utf-8')
-        arduino.write(sendCmd)
+        self.arduino.write(sendCmd)
         time.sleep(2)
         #Esto lee todas la lineas
-        msg = arduino.read(arduino.inWaiting())
+        msg = self.arduino.read(self.arduino.inWaiting())
         log.debug("<< %s" % msg)
                 
         return msg
